@@ -1,0 +1,196 @@
+@page "/article/create"
+@page "/article/update/{id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using SummerPractice2026Blazor.Constants
+@attribute [Authorize(Roles = CustomRoles.Role_Admin)]
+@using SummerPractice2026Blazor.Components.Shared
+@using SummerPractice2026Blazor.Repository.Entities
+@using SummerPractice2026Blazor.Repository.Interfaces
+@using SummerPractice2026Blazor.Services
+@inject IArticleRepository _articleRepository
+@inject IArticleCategoryRepository _articleCategoryRepository
+@inject NavigationManager _navigationManager
+@inject ArticleImageService _articleImageService
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>@(Id == Guid.Empty ? "Create" : "Update") Article</PageTitle>
+
+@if (isLoading)
+{
+  <div class="loading-overlay">
+    <img src="/images/loading.gif" alt="Loading" />
+  </div>
+}
+else
+{
+  <div class="custom-card">
+    <div class="custom-card-header">
+      <h2 class="header-title">
+        @(Id == Guid.Empty ? "Create" : "Update") Article
+      </h2>
+    </div>
+    <div class="custom-card-body">
+      <EditForm Model="article" FormName="articleForm" OnValidSubmit="UpsertArticle">
+        <FluentValidationValidator />
+        <div class="form-container">
+          <div class="form-group">
+            <label for="name">Name</label>
+            <RadzenTextBox @bind-Value="article.Name" Name="Name" Placeholder="Name" Style="width: 100%"></RadzenTextBox>
+            <ValidationMessage For="@(() => article.Name)" />
+          </div>
+
+          <div class="form-group">
+            <label for="price">Price ($)</label>
+            <RadzenNumeric @bind-Value="article.Price" Name="Price" Format="c" Culture="@System.Globalization.CultureInfo.GetCultureInfo("en-US")" Style="width: 100%"></RadzenNumeric>
+            <ValidationMessage For="@(() => article.Price)" />
+          </div>
+
+          <div class="form-group">
+            <label for="categoryId">Category</label>
+            <RadzenDropDown @bind-Value="article.ArticleCategoryId" Data="@categories" TextProperty="Name" ValueProperty="Id" Name="ArticleCategoryId" Style="width: 100%" />
+            <ValidationMessage For="@(() => article.ArticleCategoryId)" />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <RadzenTextArea @bind-Value="article.Description" Name="Description" Style="width: 100%"></RadzenTextArea>
+            <ValidationMessage For="@(() => article.Description)" />
+          </div>
+
+          <div class="form-group">
+            <label for="specialTag">Special Tag</label>
+            <RadzenTextBox @bind-Value="article.SpecialTag" Name="SpecialTag" Style="width: 100%"></RadzenTextBox>
+            <ValidationMessage For="@(() => article.SpecialTag)" />
+          </div>
+
+          <div class="form-group">
+            <div style="@(isImageUploading ? "display: none;" : "")">
+              @if (string.IsNullOrEmpty(article.ImageUrl))
+              {
+                <label for="customFile">Upload Image</label>
+                <InputFile OnChange="SaveInputFile" class="input-file" id="customFile" accept="image/*" />
+              }
+            </div>
+            @if (isImageUploading)
+            {
+              <div style="display: flex; align-items: center; margin-top: 10px;">
+                <img src="/images/loading.gif" alt="Uploading..." style="max-height: 30px; margin-right: 10px;" />
+                <span style="font-style: italic; color: #555;">Uploading image...</span>
+              </div>
+            }
+            @if (!string.IsNullOrEmpty(uploadError))
+            {
+              <div class="validation-message" style="color: red; margin-top: 5px; font-weight: 500;">@uploadError</div>
+            }
+            @if (!string.IsNullOrEmpty(article.ImageUrl))
+            {
+              <div class="image-preview-row">
+                <div class="image-preview-thumbnail">
+                  <img src="@article.ImageUrl" alt="Article Image" class="image-thumbnail" style="max-height: 280px;" />
+                </div>
+                <div class="image-preview-actions">
+                  <Button Class="btn btn-danger" OnClick="DeleteImage" Disabled="isImageUploading">
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            }
+            <ValidationMessage For="@(() => article.ImageUrl)" />
+          </div>
+
+          <div class="form-actions">
+            <Button Type="submit" Disabled="isLoading || isImageUploading">
+              @(Id == Guid.Empty ? "Create" : "Update")
+            </Button>
+            <Button Class="btn btn-danger" OnClick="@(() => _navigationManager.NavigateTo("article"))" Disabled="isImageUploading">
+              Back To List
+            </Button>
+          </div>
+        </div>
+      </EditForm>
+    </div>
+  </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private bool isLoading;
+    private bool isImageUploading;
+    private string? uploadError;
+    private Article article = new Article();
+    private List<ArticleCategory> categories = new List<ArticleCategory>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        categories = await _articleCategoryRepository.GetAllArticleCategories();
+        await LoadArticle();
+        isLoading = false;
+    }
+
+    private async Task LoadArticle()
+    {
+        if (Id != Guid.Empty)
+        {
+            article = await _articleRepository.GetArticleById(Id);
+        }
+    }
+
+    private async Task UpsertArticle()
+    {
+        isLoading = true;
+        if (article.Id == Guid.Empty)
+        {
+            await _articleRepository.CreateArticle(article);
+        }
+        else
+        {
+            await _articleRepository.UpdateArticle(article);
+        }
+        isLoading = false;
+        _navigationManager.NavigateTo("article");
+    }
+
+  private async Task SaveInputFile(InputFileChangeEventArgs e)
+  {
+    var file = e.File;
+    if (file != null)
+    {
+      uploadError = null;
+
+      // Limit file size to 10 MB (same as the backend service)
+      const long maxFileSize = 10 * 1024 * 1024;
+      if (file.Size > maxFileSize)
+      {
+        uploadError = $"File size exceeds the limit of {maxFileSize / (1024 * 1024)} MB.";
+        return;
+      }
+
+      isImageUploading = true;
+      try
+      {
+        article.ImageUrl = await _articleImageService.SaveFileAsync(file);
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"Error uploading file: {ex.Message}");
+        uploadError = "Failed to upload the image. Please try again.";
+      }
+      finally
+      {
+        isImageUploading = false;
+      }
+    }
+  }
+
+  private void DeleteImage()
+  {
+    if (!string.IsNullOrEmpty(article.ImageUrl))
+    {
+      _articleImageService.DeleteFile(article.ImageUrl);
+      article.ImageUrl = null;
+    }
+  }
+}

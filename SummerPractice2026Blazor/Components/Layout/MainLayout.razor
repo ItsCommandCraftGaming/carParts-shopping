@@ -1,0 +1,22 @@
+﻿@using Radzen.Blazor
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="content">
+            @Body
+        </div>
+    </main>
+</div>
+
+<RadzenComponents @rendermode="InteractiveServer" />
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

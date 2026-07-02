@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>aspnet-SummerPractice2026Blazor-c3b86a02-445b-48ee-bd30-e299e0dd9aa3</UserSecretsId>
+		<BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Blazored.FluentValidation" Version="2.2.0" />
+		<PackageReference Include="FluentValidation" Version="12.1.1" />
+		<PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.8" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8" />
+		<PackageReference Include="Radzen.Blazor" Version="10.4.9" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="wwwroot\images\article\" />
+		<Folder Include="wwwroot\lib\bootstrap\dist\css\" />
+		<Folder Include="wwwroot\lib\bootstrap\dist\js\" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(DOTNET_WATCH)' == '1' or '$(DOTNET_WATCH)' == 'true'">
+		<DefaultItemExcludes>$(DefaultItemExcludes);wwwroot\images\article\**</DefaultItemExcludes>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Update="wwwroot\images\article\**" CopyToPublishDirectory="PreserveNewest" Watch="false" />
+	</ItemGroup>
+
+</Project>

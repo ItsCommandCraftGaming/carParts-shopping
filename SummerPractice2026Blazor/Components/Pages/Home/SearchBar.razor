@@ -1,0 +1,18 @@
+<RadzenTextBox Style="width: 420px"
+               Placeholder="Search article"
+               Value="@SearchText"
+               @oninput="OnInputChanged" />
+
+@code {
+    [Parameter]
+    public string SearchText { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> SearchTextChanged { get; set; }
+
+    private async Task OnInputChanged(ChangeEventArgs e)
+    {
+        SearchText = e.Value?.ToString() ?? string.Empty;
+		await SearchTextChanged.InvokeAsync(SearchText);
+    }
+}

@@ -1,0 +1,93 @@
+@page "/article"
+@using Microsoft.AspNetCore.Authorization
+@using SummerPractice2026Blazor.Constants
+@attribute [Authorize(Roles = CustomRoles.Role_Admin)]
+@using Repository.Interfaces;
+@using Repository.Entities;
+@using SummerPractice2026Blazor.Components.Shared
+@inject IArticleRepository _articleRepository
+@inject NavigationManager _navigationManager
+@inject DialogService _dialogService
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>Article List</PageTitle>
+
+@if (isLoading)
+{
+  <div class="loading-overlay">
+    <img src="/images/loading.gif" alt="Loading" />
+  </div>
+}
+else
+{
+  <div class="custom-card">
+    <div class="custom-card-header">
+      <h2 class="header-title">Articles</h2>
+      <Button Class="btn btn-secondary"
+              OnClick="@(() => _navigationManager.NavigateTo("article/create"))">
+        Add New Article
+      </Button>
+    </div>
+    <div class="custom-card-body">
+      <RadzenDataGrid Data="@articles" TItem="Article" class="custom-table">
+        <Columns>
+          <RadzenDataGridColumn TItem="Article" Title="Image" Width="100px" TextAlign="TextAlign.Center">
+            <Template Context="article">
+              @if (!string.IsNullOrEmpty(article.ImageUrl))
+              {
+                <img src="@article.ImageUrl" alt="@article.Name" style="max-height: 40px; max-width: 40px; border-radius: 4px;" />
+              }
+            </Template>
+          </RadzenDataGridColumn>
+          <RadzenDataGridColumn TItem="Article" Property="Name" Title="Name" />
+          <RadzenDataGridColumn TItem="Article" Property="Price" Title="Price ($)">
+            <Template Context="article">
+              @article.Price.ToString("C", System.Globalization.CultureInfo.GetCultureInfo("en-US"))
+            </Template>
+          </RadzenDataGridColumn>
+          <RadzenDataGridColumn TItem="Article" Property="ArticleCategory.Name" Title="Category" />
+          <RadzenDataGridColumn TItem="Article" TextAlign="TextAlign.Right">
+            <Template Context="article">
+              <Button OnClick="@(() => _navigationManager.NavigateTo($"article/update/{article.Id}"))">
+                Edit
+              </Button>
+              <Button Class="btn btn-danger"
+                      OnClick="@(() => DeleteArticle(article.Id))">
+                Delete
+              </Button>
+            </Template>
+          </RadzenDataGridColumn>
+        </Columns>
+      </RadzenDataGrid>
+    </div>
+  </div>
+}
+
+@code {
+  private bool isLoading;
+  private List<Article> articles = new List<Article>();
+
+  protected override async Task OnInitializedAsync()
+  {
+    isLoading = true;
+    await LoadAllArticles();
+    isLoading = false;
+  }
+
+  private async Task LoadAllArticles()
+  {
+    articles = await _articleRepository.GetAllArticles();
+  }
+
+  private async Task DeleteArticle(Guid id)
+  {
+    var confirmed = await _dialogService.Confirm("Are you sure you want to delete this article?", "Confirm Delete", new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+    if (confirmed == true)
+    {
+      isLoading = true;
+      await _articleRepository.DeleteArticle(id);
+      await LoadAllArticles();
+      isLoading = false;
+    }
+  }
+}

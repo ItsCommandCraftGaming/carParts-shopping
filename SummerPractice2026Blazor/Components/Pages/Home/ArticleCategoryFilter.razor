@@ -1,0 +1,32 @@
+@using SummerPractice2026Blazor.Components.Shared
+@using SummerPractice2026Blazor.Repository.Entities
+
+<div class="category-filter">
+	<Button OnClick=@(() => SelectCategory(null))
+		Class="@(SelectedCategoryId == null ? "btn btn-primary" : "btn btn-secondary")">
+		All
+	</Button>
+	@foreach (var category in ArticleCategories)
+	{
+		<Button OnClick=@(() => SelectCategory(category.Id))
+			Class="@(SelectedCategoryId == category.Id ? "btn btn-primary" : "btn btn-secondary")">
+			@category.Name
+		</Button>
+	}
+</div>
+
+@code {
+	[Parameter]
+	public EventCallback<Guid?> OnCategorySelected { get; set; }
+
+	[Parameter]
+	public IEnumerable<ArticleCategory> ArticleCategories { get; set; } = [];
+
+	private Guid? SelectedCategoryId { get; set; }
+
+	private async Task SelectCategory(Guid? categoryId)
+	{
+		SelectedCategoryId = categoryId;
+		await OnCategorySelected.InvokeAsync(categoryId);
+	}
+}

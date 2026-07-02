@@ -1,0 +1,110 @@
+@using SummerPractice2026Blazor.Repository.Entities
+@using SummerPractice2026Blazor.Repository.Interfaces
+@inject IArticleRepository articleRepository
+@inject IArticleCategoryRepository articleCategoryRepository
+
+<div class="article-list-container">
+	<ArticleCategoryFilter ArticleCategories="ArticleCategories" OnCategorySelected="OnCategorySelected"/>
+	@if(IsLoading){
+		<div class="loading-overlay">
+			<img src="/images/loading.gif" alt="Loading"/>
+		</div>
+	}
+	else
+	{
+		<div class="article-list">
+			@foreach(var article in FilteredArticles)
+			{
+				<ArticleCard Item="article"/>
+			}
+		</div>
+	}
+</div>
+
+
+@code {
+	[Parameter]
+	public string SearchQuery { get; set; } = string.Empty;
+
+	private bool IsLoading;
+	private Guid? SelectedCategoryId { get; set; }
+	private string searchQuery = string.Empty;
+
+	private IEnumerable<Article> Articles { get; set; } = [];
+	private IEnumerable<ArticleCategory> ArticleCategories { get; set; } = [];
+
+	private IEnumerable<Article> FilteredArticles { get; set; } = [];
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			IsLoading = true;
+			Console.WriteLine("[DEBUG] OnInitializedAsync started.");
+			Articles = await articleRepository.GetAllArticles();
+			ArticleCategories = await articleCategoryRepository.GetAllArticleCategories();
+			Console.WriteLine($"[DEBUG] OnInitializedAsync fetched Articles: {Articles?.Count() ?? 0}, Categories: {ArticleCategories?.Count() ?? 0}");
+			ApplyFilters();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[DEBUG] Exception in OnInitializedAsync: {ex}");
+		}
+		finally
+		{
+			IsLoading = false;
+			Console.WriteLine($"[DEBUG] OnInitializedAsync completed. IsLoading: {IsLoading}");
+		}
+	}
+
+	protected override void OnParametersSet()
+	{
+		searchQuery = SearchQuery;
+		ApplyFilters();
+	}
+
+	private void FilterByCategory(Guid categoryId)
+	{
+		IsLoading = true;
+
+		SelectedCategoryId = categoryId;
+		ApplyFilters();
+
+		IsLoading = false;
+	}
+
+	private void OnCategorySelected(Guid? categoryId)
+	{
+		SelectedCategoryId = categoryId;
+		ApplyFilters();
+	}
+
+	private void ApplyFilters()
+	{
+		try
+		{
+			Console.WriteLine($"[DEBUG] ApplyFilters started. Total Articles: {Articles?.Count() ?? 0}, SelectedCategoryId: {SelectedCategoryId}, SearchQuery: '{searchQuery}'");
+			var query = (Articles ?? []).AsQueryable();
+
+			if (SelectedCategoryId != null)
+			{
+				query = query.Where(article => article.ArticleCategoryId == SelectedCategoryId);
+			}
+
+			if (!string.IsNullOrWhiteSpace(searchQuery))
+			{
+				var search = searchQuery.Trim().ToLower();
+				query = query.Where(article => 
+					(article.Name != null && article.Name.ToLower().Contains(search)) || 
+					(article.Description != null && article.Description.ToLower().Contains(search)));
+			}
+
+			FilteredArticles = query.ToList();
+			Console.WriteLine($"[DEBUG] ApplyFilters completed. FilteredArticles: {FilteredArticles?.Count() ?? 0}");
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[DEBUG] Exception in ApplyFilters: {ex}");
+		}
+	}
+}

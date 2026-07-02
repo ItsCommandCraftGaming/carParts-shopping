@@ -1,0 +1,95 @@
+@page "/article-category/create"
+@page "/article-category/update/{id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using SummerPractice2026Blazor.Constants
+@attribute [Authorize(Roles = CustomRoles.Role_Admin)]
+@using SummerPractice2026Blazor.Components.Shared
+@using SummerPractice2026Blazor.Repository.Entities
+@using SummerPractice2026Blazor.Repository.Interfaces
+@inject IArticleCategoryRepository _articleCategoryRepository
+@inject NavigationManager _navigationManager
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<PageTitle>@(Id == Guid.Empty ? "Create" : "Update") Article Category</PageTitle>
+
+@if (isLoading)
+{
+  <div class="loading-overlay">
+    <img src="/images/loading.gif" alt="Loading" />
+  </div>
+}
+else
+{
+  <div class="custom-card">
+    <div class="custom-card-header">
+      <h2 class="header-title">
+        @(Id == Guid.Empty ? "Create" : "Update") Article Category
+      </h2>
+    </div>
+    <div class="custom-card-body">
+      <EditForm Model="articleCategory" FormName="articleCategoryForm"
+                OnValidSubmit="UpsertArticleCategory">
+        <FluentValidationValidator />
+        <div class="form-container">
+          <div class="form-group">
+            <label for="name">Name</label>
+            <RadzenTextBox @bind-Value="articleCategory.Name"
+                           Name="Name"
+                           Placeholder="Name"
+                           Style="width: 100%">
+            </RadzenTextBox>
+            <ValidationMessage For="@(() => articleCategory.Name)" />
+          </div>
+          <div class="form-actions">
+            <Button Type="submit" Disabled="isLoading">
+              @(Id == Guid.Empty ? "Create" : "Update")
+            </Button>
+            <Button Class="btn btn-danger"
+                    OnClick="@(() => _navigationManager
+                                                                .NavigateTo("article-category"))">
+              Back To List
+            </Button>
+          </div>
+        </div>
+      </EditForm>
+    </div>
+  </div>
+}
+
+@code {
+  [Parameter]
+  public Guid Id { get; set; }
+
+  private bool isLoading;
+  private ArticleCategory articleCategory = new ArticleCategory();
+
+  protected override async Task OnInitializedAsync()
+  {
+    isLoading = true;
+    await LoadArticleCategory();
+    isLoading = false;
+  }
+
+  private async Task LoadArticleCategory()
+  {
+    if (Id != Guid.Empty)
+    {
+      articleCategory = await _articleCategoryRepository.GetArticleCategoryById(Id);
+    }
+  }
+
+  private async Task UpsertArticleCategory()
+  {
+    isLoading = true;
+    if (articleCategory.Id == Guid.Empty)
+    {
+      await _articleCategoryRepository.CreateArticleCategory(articleCategory);
+    }
+    else
+    {
+      await _articleCategoryRepository.UpdateArticleCategory(articleCategory);
+    }
+    isLoading = false;
+    _navigationManager.NavigateTo("article-category");
+  }
+}
