@@ -1,0 +1,118 @@
+@using SummerPractice2026Blazor.Services
+@using Radzen
+@inject CartService CartService
+@inject NotificationService NotificationService
+
+<div class="cart-drawer-backdrop" @onclick="CloseCart"></div>
+<div class="cart-drawer">
+    <div class="cart-drawer-header">
+        <h3>Coș de cumpărături</h3>
+        <button class="close-btn" @onclick="CloseCart" aria-label="Închide">&times;</button>
+    </div>
+    
+    <div class="cart-drawer-body">
+        @if (!CartService.GetItems().Any())
+        {
+            <div class="empty-cart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#9ca3af" class="bi bi-cart-x" viewBox="0 0 16 16">
+                  <path d="M7.354 5.646a.5.5 0 1 0-.708.708L7.793 7.5 6.646 8.646a.5.5 0 1 0 .708.708L8.5 8.207l1.146 1.147a.5.5 0 0 0 .708-.708L9.207 7.5l1.147-1.146a.5.5 0 0 0-.708-.708L8.5 6.793 7.354 5.646z"/>
+                  <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zm3.915 10L3.102 4h10.796l-1.313 7h-8.17zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                </svg>
+                <p>Coșul tău este gol.</p>
+            </div>
+        }
+        else
+        {
+            <div class="cart-items">
+                @foreach (var item in CartService.GetItems())
+                {
+                    <div class="cart-item">
+                        @if (!string.IsNullOrEmpty(item.Article.ImageUrl))
+                        {
+                            <img src="@item.Article.ImageUrl" alt="@item.Article.Name" class="cart-item-img" />
+                        }
+                        else
+                        {
+                            <div class="cart-item-img-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#9ca3af" viewBox="0 0 16 16">
+                                    <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                                </svg>
+                            </div>
+                        }
+                        <div class="cart-item-details">
+                            <h4>@item.Article.Name</h4>
+                            <div class="cart-item-price">@item.Article.Price.ToString("0.0")$</div>
+                            <div class="cart-item-qty">
+                                <button type="button" class="qty-btn" @onclick="() => DecreaseQty(item)">-</button>
+                                <span class="qty-val">@item.Quantity</span>
+                                <button type="button" class="qty-btn" @onclick="() => IncreaseQty(item)">+</button>
+                            </div>
+                        </div>
+                        <button type="button" class="remove-btn" @onclick="() => RemoveItem(item)" title="Elimină din coș">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                              <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    
+    @if (CartService.GetItems().Any())
+    {
+        <div class="cart-drawer-footer">
+            <div class="total-row">
+                <span>Total:</span>
+                <span class="total-price">@CartService.GetTotalPrice().ToString("0.0")$</span>
+            </div>
+            <div class="footer-actions">
+                <button type="button" class="clear-btn" @onclick="ClearCart">Golește coșul</button>
+                <button type="button" class="checkout-btn" @onclick="Checkout">Plasează comanda</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task CloseCart()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task DecreaseQty(CartItem item)
+    {
+        await CartService.UpdateQuantityAsync(item.Article.Id, item.Quantity - 1);
+    }
+
+    private async Task IncreaseQty(CartItem item)
+    {
+        await CartService.UpdateQuantityAsync(item.Article.Id, item.Quantity + 1);
+    }
+
+    private async Task RemoveItem(CartItem item)
+    {
+        await CartService.RemoveFromCartAsync(item.Article.Id);
+    }
+
+    private async Task ClearCart()
+    {
+        await CartService.ClearCartAsync();
+    }
+
+    private async Task Checkout()
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = "Comandă Plasată!",
+            Detail = "Comanda dvs. a fost înregistrată cu succes!",
+            Duration = 5000
+        });
+        await CartService.ClearCartAsync();
+        await CloseCart();
+    }
+}

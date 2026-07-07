@@ -1,0 +1,94 @@
+@using SummerPractice2026Blazor.Services
+@using SummerPractice2026Blazor.Components.Pages.Home
+@using Microsoft.AspNetCore.Components.Authorization
+@inject CartService CartService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<header class="home-header">
+	<nav class="home-nav">
+		<a href="home" class="home-brand">Article management</a>
+		<div class="home-nav-links flex-align-center">
+			<AuthorizeView>
+				<Authorized>
+					<a href="/" class="nav-link-btn">Back</a>
+					
+					<a href="Account/Manage" class="user-link-nav" title="Manage Account">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-circle" viewBox="0 0 16 16">
+							<path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+							<path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+						</svg>
+						<span class="user-name">@context.User.Identity?.Name</span>
+					</a>
+
+					<button type="button" class="cart-btn" @onclick="ToggleCart" title="Shopping Cart">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-cart" viewBox="0 0 16 16">
+						  <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a1 1 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+						</svg>
+						@if (cartCount > 0)
+						{
+							<span class="cart-badge">@cartCount</span>
+						}
+					</button>
+
+					<form action="Account/Logout" method="post" class="logout-form-nav">
+						<AntiforgeryToken />
+						<input type="hidden" name="ReturnUrl" value="home" />
+						<button type="submit" class="logout-btn-nav" title="Logout">
+							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+								<path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/>
+								<path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>
+							</svg>
+							Logout
+						</button>
+					</form>
+				</Authorized>
+				<NotAuthorized>
+					<a href="Account/Login">Login</a>
+					<a href="Account/Register">Register</a>
+				</NotAuthorized>
+			</AuthorizeView>
+		</div>
+	</nav>
+</header>
+
+@if (isCartOpen)
+{
+	<Cart OnClose="ToggleCart" />
+}
+
+@code {
+	private bool isCartOpen = false;
+	private int cartCount = 0;
+
+	protected override void OnInitialized()
+	{
+		CartService.OnCartChanged += HandleCartChanged;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await CartService.InitializeAsync();
+			cartCount = CartService.GetTotalItemsCount();
+			StateHasChanged();
+		}
+	}
+
+	private void HandleCartChanged()
+	{
+		cartCount = CartService.GetTotalItemsCount();
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void ToggleCart()
+	{
+		isCartOpen = !isCartOpen;
+	}
+
+	public void Dispose()
+	{
+		CartService.OnCartChanged -= HandleCartChanged;
+	}
+}

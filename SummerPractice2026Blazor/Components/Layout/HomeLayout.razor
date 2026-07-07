@@ -1,24 +1,13 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@using SummerPractice2026Blazor.Components.Layout
+@using Radzen.Blazor
 
 <div class="home-layout">
-	<header class="home-header">
-		<nav class="home-nav">
-			<a href="/" class="home-brand">Article management</a>
-			<div class="home-nav-links">
-				<AuthorizeView>
-					<Authorized>
-						<a href="/">Back</a>
-					</Authorized>
-					<NotAuthorized>
-						<a href="Account/Login"></a>
-						<a href="Account/Register"></a>
-					</NotAuthorized>
-				</AuthorizeView>
-			</div>
-		</nav>
-	</header>
+	<HomeHeader @rendermode="InteractiveServer" />
 
 	<main class="home-main">
 		@Body
 	</main>
 </div>
+
+<RadzenComponents @rendermode="InteractiveServer" />

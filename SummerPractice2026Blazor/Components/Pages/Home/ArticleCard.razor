@@ -1,5 +1,10 @@
-﻿@using SummerPractice2026Blazor.Components.Shared
+@using SummerPractice2026Blazor.Components.Shared
 @using SummerPractice2026Blazor.Repository.Entities
+@using SummerPractice2026Blazor.Services
+@using Radzen
+@inject CartService CartService
+@inject NotificationService NotificationService
+
 <div class="article-card">
 	<div class="price">@Item.Price.ToString("0.0")$</div>
 
@@ -7,7 +12,7 @@
 
 	<h3>@Item.Name</h3>
 
-	<Button>Add to cart</Button>
+	<Button OnClick="AddToCart">Adaugă în coș</Button>
 
 	<p>@Item.Description</p>
 </div>
@@ -15,4 +20,16 @@
 @code {
 	[Parameter, EditorRequired]
 	public Article Item{get; set;}
+
+	private async Task AddToCart()
+	{
+		await CartService.AddToCartAsync(Item);
+		NotificationService.Notify(new NotificationMessage
+		{
+			Severity = NotificationSeverity.Success,
+			Summary = "Succes",
+			Detail = $"{Item.Name} a fost adăugat în coș!",
+			Duration = 3000
+		});
+	}
 }
