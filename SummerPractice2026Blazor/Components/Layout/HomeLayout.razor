@@ -1,13 +1,95 @@
 @inherits LayoutComponentBase
-@using SummerPractice2026Blazor.Components.Layout
+@using SummerPractice2026Blazor.Services
+@using SummerPractice2026Blazor.Components.Pages.Home
 @using Radzen.Blazor
+@using Microsoft.AspNetCore.Components.Authorization
+@inject CartService CartService
+@implements IDisposable
 
 <div class="home-layout">
-	<HomeHeader @rendermode="InteractiveServer" />
+	<header class="home-header">
+		<nav class="home-nav">
+			<a href="home" class="home-brand">Article management</a>
+			<div class="home-nav-links flex-align-center">
+				<AuthorizeView>
+					<Authorized>
+						<a href="/" class="nav-link-btn">Back</a>
+						
+						<a href="Account/Manage" class="user-link-nav" title="Manage Account">
+							<RadzenIcon Icon="account_circle" Style="font-size: 18px; vertical-align: middle; margin-right: 4px;" />
+							<span class="user-name">@context.User.Identity?.Name</span>
+						</a>
+
+						<button type="button" class="cart-btn" @onclick="ToggleCart" title="Shopping Cart">
+							<RadzenIcon Icon="shopping_cart" Style="font-size: 22px; vertical-align: middle;" />
+							@if (cartCount > 0)
+							{
+								<span class="cart-badge">@cartCount</span>
+							}
+						</button>
+
+						<form action="Account/Logout" method="post" class="logout-form-nav">
+							<AntiforgeryToken />
+							<input type="hidden" name="ReturnUrl" value="home" />
+							<button type="submit" class="logout-btn-nav" title="Logout">
+								<RadzenIcon Icon="logout" Style="font-size: 16px; vertical-align: middle; margin-right: 4px;" />
+								Logout
+							</button>
+						</form>
+					</Authorized>
+					<NotAuthorized>
+						<a href="Account/Login">Login</a>
+						<a href="Account/Register">Register</a>
+					</NotAuthorized>
+				</AuthorizeView>
+			</div>
+		</nav>
+	</header>
 
 	<main class="home-main">
 		@Body
 	</main>
 </div>
 
+@if (isCartOpen)
+{
+	<Cart OnClose="ToggleCart" />
+}
+
 <RadzenComponents @rendermode="InteractiveServer" />
+
+@code {
+	private bool isCartOpen = false;
+	private int cartCount = 0;
+
+	protected override void OnInitialized()
+	{
+		CartService.OnCartChanged += HandleCartChanged;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await CartService.InitializeAsync();
+			cartCount = CartService.GetTotalItemsCount();
+			StateHasChanged();
+		}
+	}
+
+	private void HandleCartChanged()
+	{
+		cartCount = CartService.GetTotalItemsCount();
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void ToggleCart()
+	{
+		isCartOpen = !isCartOpen;
+	}
+
+	public void Dispose()
+	{
+		CartService.OnCartChanged -= HandleCartChanged;
+	}
+}
